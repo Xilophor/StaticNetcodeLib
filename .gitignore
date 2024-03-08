@@ -1,0 +1,24 @@
+# Ignore All
+/*
+
+# Add Root-Level Content
+!.gitignore
+!.gitattributes
+!.editorconfig
+!README.md
+!LICENSE
+!CHANGELOG.md
+!StaticNetcodeLib.sln
+!StaticNetcodeLib
+!libs
+!assets
+!.github
+!.config
+
+# Remove Nested Content
+[Oo]bj
+[Bb]in
+*.user
+
+# Add Template User Files
+!*.template.*.user
