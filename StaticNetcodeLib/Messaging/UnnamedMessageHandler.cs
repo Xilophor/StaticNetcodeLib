@@ -3,6 +3,7 @@ namespace StaticNetcodeLib.Messaging;
 using System;
 using System.Linq;
 using System.Text;
+using Enums;
 using OdinSerializer;
 using Unity.Collections;
 using Unity.Netcode;

@@ -1,5 +1,6 @@
 namespace StaticNetcodeLib.Messaging;
 
+using Enums;
 using OdinSerializer;
 
 public readonly struct MessageData(

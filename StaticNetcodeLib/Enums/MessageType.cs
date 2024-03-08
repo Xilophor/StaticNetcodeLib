@@ -1,4 +1,4 @@
-namespace StaticNetcodeLib.Messaging;
+namespace StaticNetcodeLib.Enums;
 
 public enum MessageType
 {
