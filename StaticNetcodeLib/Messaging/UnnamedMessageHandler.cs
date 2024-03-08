@@ -7,7 +7,7 @@ using OdinSerializer;
 using Unity.Collections;
 using Unity.Netcode;
 
-internal class UnnamedMessageHandler
+internal class UnnamedMessageHandler : IDisposable
 {
     internal static UnnamedMessageHandler? Instance { get; private set; }
 
@@ -22,6 +22,8 @@ internal class UnnamedMessageHandler
 
         this.NetworkManager = NetworkManager.Singleton;
         this.CustomMessagingManager = this.NetworkManager.CustomMessagingManager;
+
+        this.CustomMessagingManager.OnUnnamedMessage += this.ReceiveMessage;
     }
 
     #region Messaging
@@ -61,6 +63,48 @@ internal class UnnamedMessageHandler
 
     #endregion
 
+    #region Receive
+
+    private void ReceiveMessage(ulong clientId, FastBufferReader message)
+    {
+        message.ReadValueSafe(out string identifier);
+
+        if (identifier != LibIdentifier)
+        {
+            return;
+        }
+
+        message.ReadValueSafe(out byte[] serializedMessageData);
+
+        var messageData = Deserialize<MessageData>(serializedMessageData);
+
+        switch (messageData.MessageType)
+        {
+            case MessageType.ServerRpc:
+                this.ReceiveServerRpc(messageData);
+                break;
+            case MessageType.ClientRpc:
+                this.ReceiveClientRpc(messageData);
+                break;
+            case MessageType.Variable:
+                throw new NotImplementedException();
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+
+    private void ReceiveServerRpc(MessageData messageData)
+    {
+
+    }
+
+    private void ReceiveClientRpc(MessageData messageData)
+    {
+
+    }
+
+    #endregion
+
     #endregion
 
     #region Helper Methods
@@ -93,4 +137,6 @@ internal class UnnamedMessageHandler
     }
 
     #endregion
+
+    public void Dispose() => this.CustomMessagingManager.OnUnnamedMessage -= this.ReceiveMessage;
 }
