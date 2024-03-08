@@ -38,15 +38,11 @@ internal class UnnamedMessageHandler : IDisposable
             clientRpcParams.Send.TargetClientIdsNativeArray.GetValueOrDefault().ToArray();
 
         if (clients.Any())
-        {
             this.CustomMessagingManager.SendUnnamedMessage(clients, writer,
                 NetworkDelivery.ReliableFragmentedSequenced);
-        }
         else
-        {
             this.CustomMessagingManager.SendUnnamedMessageToAll(writer,
                 NetworkDelivery.ReliableFragmentedSequenced);
-        }
 
         writer.Dispose();
     }
@@ -69,10 +65,7 @@ internal class UnnamedMessageHandler : IDisposable
     {
         message.ReadValueSafe(out string identifier);
 
-        if (identifier != LibIdentifier)
-        {
-            return;
-        }
+        if (identifier != LibIdentifier) return;
 
         message.ReadValueSafe(out byte[] serializedMessageData);
 
