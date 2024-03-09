@@ -1,4 +1,4 @@
-namespace StaticNetcodeLib;
+namespace StaticNetcodeLib.Messaging;
 
 using System.Reflection;
 using OdinSerializer;
