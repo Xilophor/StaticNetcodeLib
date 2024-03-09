@@ -13,4 +13,4 @@ This mod is an API meant for mod developers.
 
 ## Acknowledgements
 
-Thank you [@Lordfirespeed](https://github.com/Lordfirespeed) for helping set up the GitHub Actions, and being my rubber ducky.
+Thank you [@Lordfirespeed](https://github.com/Lordfirespeed) for being my rubber ducky.
