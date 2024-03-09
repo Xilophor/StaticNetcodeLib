@@ -11,7 +11,7 @@ internal class RpcPatcher
 {
     internal static Dictionary<MethodBase, RpcExecStage> RpcExecStageLookup { get; } = [];
 
-    public static bool PatchServerRpc(MethodBase __originalMethod, ref object[] __args)
+    public static bool PatchServerRpc(MethodBase __originalMethod, object[] __args)
     {
         if (!IsListening(out var networkManager)) return false;
 

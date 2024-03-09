@@ -1,10 +1,6 @@
-using OdinSerializer;
-using StaticNetcodeLib.Serialization;
-
-[assembly: RegisterFormatter(typeof(INetworkSerializableFormatter))]
-
 namespace StaticNetcodeLib.Serialization;
 
+using OdinSerializer;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -12,13 +8,13 @@ using Unity.Netcode;
 /// <summary>
 ///     Custom formatter for the <see cref="INetworkSerializable"/> interface.
 /// </summary>
-public class INetworkSerializableFormatter : MinimalBaseFormatter<INetworkSerializable>
+public class INetworkSerializableFormatter<T> : MinimalBaseFormatter<T> where T : INetworkSerializable
 {
-    private static readonly Serializer<byte[]> ByteArraySerializer = Serializer.Get<byte[]>();
+    private readonly Serializer<byte[]> _byteArraySerializer = Serializer.Get<byte[]>();
 
-    protected override void Read(ref INetworkSerializable value, IDataReader reader)
+    protected override void Read(ref T value, IDataReader reader)
     {
-        var byteArray = ByteArraySerializer.ReadValue(reader);
+        var byteArray = this._byteArraySerializer.ReadValue(reader);
 
         var ngoReader = new FastBufferReader(byteArray, Allocator.Temp);
         var ngoSerializer = new BufferSerializer<BufferSerializerReader>(new BufferSerializerReader(ngoReader));
@@ -26,13 +22,13 @@ public class INetworkSerializableFormatter : MinimalBaseFormatter<INetworkSerial
         value.NetworkSerialize(ngoSerializer);
     }
 
-    protected override void Write(ref INetworkSerializable value, IDataWriter writer)
+    protected override void Write(ref T value, IDataWriter writer)
     {
         var ngoWriter = new FastBufferWriter(1024, Allocator.Temp, 65536);
         var ngoSerializer = new BufferSerializer<BufferSerializerWriter>(new BufferSerializerWriter(ngoWriter));
 
         value.NetworkSerialize(ngoSerializer);
 
-        ByteArraySerializer.WriteValue(ngoSerializer.GetFastBufferWriter().ToArray(), writer);
+        this._byteArraySerializer.WriteValue(ngoSerializer.GetFastBufferWriter().ToArray(), writer);
     }
 }
