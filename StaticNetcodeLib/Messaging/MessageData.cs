@@ -5,14 +5,18 @@ using OdinSerializer;
 
 public readonly struct MessageData(
     MessageType messageType,
-    Identifier identifier,
+    IIdentifier identifier,
     object? data
 )
 {
     [OdinSerialize]
     public MessageType MessageType { get; init; } = messageType;
+
     [OdinSerialize]
-    public Identifier Identifier { get; init; } = identifier;
+    public IIdentifier Identifier { get; init; } = identifier;
+
     [OdinSerialize]
     public object? Data { get; init; } = data;
+
+    public (MessageType, IIdentifier, object?) AsValueTuple() => (this.MessageType, this.Identifier, this.Data);
 }
