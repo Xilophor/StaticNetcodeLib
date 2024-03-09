@@ -8,6 +8,7 @@ using BepInEx.Logging;
 using Enums;
 using HarmonyLib;
 using Patches;
+using Unity.Netcode;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class StaticNetcodeLib : BaseUnityPlugin
@@ -56,11 +57,16 @@ public class StaticNetcodeLib : BaseUnityPlugin
         var methodsInClasses = classesToPatch.SelectMany(type =>
             type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)).ToArray();
 
-        var serverRpcsToPatch = methodsInClasses.Where(method => method.GetCustomAttributes<SServerRpcAttribute>().Any() && method.IsStatic);
-        var clientRpcsToPatch = methodsInClasses.Where(method => method.GetCustomAttributes<SClientRpcAttribute>().Any() && method.IsStatic);
+        var serverRpcsToPatch = methodsInClasses.Where(method => method.GetCustomAttributes<ServerRpcAttribute>().Any() && method.IsStatic);
+        var clientRpcsToPatch = methodsInClasses.Where(method => method.GetCustomAttributes<ClientRpcAttribute>().Any() && method.IsStatic);
 
         serverRpcsToPatch.Do(method =>
         {
+            if (!method.Name.EndsWith("ServerRpc"))
+            {
+                Logger.LogError($"Method {method.FullDescription()} must end with ServerRpc.");
+                return;
+            }
             try
             {
                 Harmony?.Patch(method, prefix: ServerRpcPatch);
@@ -73,6 +79,11 @@ public class StaticNetcodeLib : BaseUnityPlugin
         });
         clientRpcsToPatch.Do(method =>
         {
+            if (!method.Name.EndsWith("ClientRpc"))
+            {
+                Logger.LogError($"Method {method.FullDescription()} must end with ClientRpc.");
+                return;
+            }
             try
             {
                 Harmony?.Patch(method, prefix: ClientRpcPatch);
