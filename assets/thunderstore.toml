@@ -28,7 +28,7 @@ source = "../CHANGELOG.md"
 target = "/"
 
 [[build.copy]]
-source = "../LethalNetworkAPI/bin/Release/netstandard2.1/StaticNetcodeLib.dll"
+source = "../StaticNetcodeLib/bin/Release/netstandard2.1/StaticNetcodeLib.dll"
 target = "/BepInEx/plugins/StaticNetcodeLib/"
 
 [publish]
