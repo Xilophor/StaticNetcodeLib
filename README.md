@@ -11,7 +11,7 @@ This lib allows BepInEx mods to use Netcode for GameObjects in a static context.
 
 Add the appropriate BepInDependency attribute to your plugin class, like so:
 ```cs
-[BepInDependency(StaticNetcodeLib.Guid, DependencyFlags.HardDependency)
+[BepInDependency(StaticNetcodeLib.Guid, DependencyFlags.HardDependency)]
 public class ExampleMod : BaseUnityPlugin
 ```
 
