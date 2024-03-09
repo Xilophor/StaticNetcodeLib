@@ -50,4 +50,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: debug-build
-          path: StaticNetcodeLib/bin/Debug/netstandard2.1/StaticNetcodeLib.dll
+          path: StaticNetcodeLib/bin/Debug/netstandard2.1/Xilophor.StaticNetcodeLib.dll
