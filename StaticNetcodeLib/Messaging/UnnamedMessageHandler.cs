@@ -1,6 +1,7 @@
 namespace StaticNetcodeLib.Messaging;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Enums;
@@ -38,6 +39,17 @@ internal class UnnamedMessageHandler : IDisposable
 
         var clients = clientRpcParams.Send.TargetClientIds ??
             clientRpcParams.Send.TargetClientIdsNativeArray.GetValueOrDefault().ToArray();
+
+        // Prevent the server from sending a message to itself and receive the message instead.
+        if (clients.Any(client => client == NetworkManager.ServerClientId))
+        {
+            clients = clients.Where(client => client != NetworkManager.ServerClientId) as IReadOnlyList<ulong>;
+
+            using var reader = new FastBufferReader(writer, Allocator.Temp);
+            this.ReceiveMessage(NetworkManager.ServerClientId, reader);
+
+            if (clients is null or { Count: 0 }) { writer.Dispose(); return; }
+        }
 
         if (clients.Any())
             this.CustomMessagingManager.SendUnnamedMessage(clients, writer,
@@ -127,6 +139,7 @@ internal class UnnamedMessageHandler : IDisposable
 
         size += Encoding.UTF8.GetByteCount(LibIdentifier);
         size += serializedData.Length;
+        size += 100;
 
         return (serializedData, size);
     }

@@ -1,6 +1,5 @@
 namespace StaticNetcodeLib.Patches;
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -18,30 +17,30 @@ internal class RpcPatcher
 
         var execStage = RpcExecStageLookup[__originalMethod];
 
-        // If the execStage is server, or the calling type is a server, return true
-        if (execStage == RpcExecStage.Server || !(networkManager!.IsClient || networkManager.IsHost))
+        // If the execStage is server, return true, else if the "client" is a server, return false
+        if (execStage == RpcExecStage.Server)
             return true;
+        if (!(networkManager!.IsClient || networkManager.IsHost))
+            return false;
 
         SendServerRpc(__originalMethod, ref __args);
-
-        // Return false if the client is not the host.
-        return networkManager.IsHost;
+        return false;
     }
 
-    public static bool PatchClientRpc(MethodBase __originalMethod, object[] __args)
+    public static bool PatchClientRpc(MethodBase __originalMethod, object[]? __args)
     {
         if (!IsListening(out var networkManager)) return false;
 
         var execStage = RpcExecStageLookup[__originalMethod];
 
-        // If the execStage is client, or the calling type is a client, return true
-        if (execStage == RpcExecStage.Client || !(networkManager!.IsHost || networkManager.IsServer))
+        // If the execStage is client, return true, else if the calling type is a client, return false
+        if (execStage == RpcExecStage.Client)
             return true;
+        if (!(networkManager!.IsHost || networkManager.IsServer))
+            return false;
 
         SendClientRpc(__originalMethod, __args);
-
-        // Return false if the "client" is a server
-        return networkManager.IsHost;
+        return false;
     }
 
     #region Helper Methods
