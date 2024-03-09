@@ -11,6 +11,8 @@ using Patches;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class StaticNetcodeLib : BaseUnityPlugin
 {
+    public const string Guid = MyPluginInfo.PLUGIN_GUID;
+
     public static StaticNetcodeLib Instance { get; private set; } = null!;
     internal static new ManualLogSource Logger { get; private set; } = null!;
     private static Harmony? Harmony { get; set; }
