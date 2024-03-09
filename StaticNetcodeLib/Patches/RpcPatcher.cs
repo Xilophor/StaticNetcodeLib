@@ -10,13 +10,13 @@ using Unity.Netcode;
 
 internal class RpcPatcher
 {
-    internal static Dictionary<MethodBase, Tuple<Identifier, RpcExecStage>> RpcLookup { get; } = [];
+    internal static Dictionary<MethodBase, RpcExecStage> RpcExecStageLookup { get; } = [];
 
     public static bool PatchServerRpc(MethodBase __originalMethod, ref object[] __args)
     {
         if (!IsListening(out var networkManager)) return false;
 
-        var (_, execStage) = RpcLookup[__originalMethod];
+        var execStage = RpcExecStageLookup[__originalMethod];
 
         // If the execStage is server, or the calling type is a server, return true
         if (execStage == RpcExecStage.Server || !(networkManager!.IsClient || networkManager.IsHost))
@@ -32,7 +32,7 @@ internal class RpcPatcher
     {
         if (!IsListening(out var networkManager)) return false;
 
-        var (_, execStage) = RpcLookup[__originalMethod];
+        var execStage = RpcExecStageLookup[__originalMethod];
 
         // If the execStage is client, or the calling type is a client, return true
         if (execStage == RpcExecStage.Client || !(networkManager!.IsHost || networkManager.IsServer))
@@ -56,8 +56,7 @@ internal class RpcPatcher
     {
         if (!IsListening(out var networkManager)) return;
 
-        var (identifier, _) = RpcLookup[__originalMethod];
-        var messageData = new MessageData(MessageType.ServerRpc, identifier, __args);
+        var messageData = new MessageData(MessageType.ServerRpc, new RpcIdentifier(__originalMethod), __args);
 
         // Reverse as ServerRpcParams is typically the last param, slight performance edge
         for (var i = __args.Length - 1; i >= 0; i--)
@@ -77,9 +76,7 @@ internal class RpcPatcher
     {
         if (!IsListening(out _)) return;
 
-        var (identifier, _) = RpcLookup[__originalMethod];
-        var messageData = new MessageData(MessageType.ClientRpc, identifier, __args);
-
+        var messageData = new MessageData(MessageType.ClientRpc, new RpcIdentifier(__originalMethod), __args);
         var clientRpcParams = (ClientRpcParams)__args.FirstOrDefault(arg => arg is ClientRpcParams);
 
         UnnamedMessageHandler.Instance!.SendMessageToClient(messageData, clientRpcParams);

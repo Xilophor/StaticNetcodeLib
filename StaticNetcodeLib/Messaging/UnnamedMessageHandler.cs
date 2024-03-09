@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Enums;
 using OdinSerializer;
+using Patches;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -15,7 +16,7 @@ internal class UnnamedMessageHandler : IDisposable
     private NetworkManager NetworkManager { get; }
     private CustomMessagingManager CustomMessagingManager { get; }
 
-    private const string LibIdentifier = "LethalNetworkAPI";
+    private const string LibIdentifier = "StaticNetcodeLib";
 
     internal UnnamedMessageHandler()
     {
@@ -74,11 +75,8 @@ internal class UnnamedMessageHandler : IDisposable
 
         switch (messageData.MessageType)
         {
-            case MessageType.ServerRpc:
-                this.ReceiveServerRpc(messageData);
-                break;
-            case MessageType.ClientRpc:
-                this.ReceiveClientRpc(messageData);
+            case MessageType.ServerRpc or MessageType.ClientRpc:
+                this.ReceiveRpc(messageData);
                 break;
             case MessageType.Variable:
                 throw new NotImplementedException();
@@ -87,14 +85,18 @@ internal class UnnamedMessageHandler : IDisposable
         }
     }
 
-    private void ReceiveServerRpc(MessageData messageData)
+    private void ReceiveRpc(MessageData messageData)
     {
+        var (_, identifier, parameters) = messageData.AsValueTuple();
 
-    }
+        var methodBase = (identifier as RpcIdentifier? ?? throw new NullReferenceException()).RpcMethod;
+        var objectArray = (object[]?)parameters is { Length: 0 } ? null : (object[]?)parameters;
 
-    private void ReceiveClientRpc(MessageData messageData)
-    {
+        var execStage = messageData.MessageType == MessageType.ServerRpc ? RpcExecStage.Server : RpcExecStage.Client;
 
+        RpcPatcher.RpcExecStageLookup[methodBase] = execStage;
+        methodBase.Invoke(null, objectArray);
+        RpcPatcher.RpcExecStageLookup[methodBase] = RpcExecStage.None;
     }
 
     #endregion
@@ -118,16 +120,15 @@ internal class UnnamedMessageHandler : IDisposable
         writer.WriteValueSafe(serializedMessage);
     }
 
-    private static Tuple<byte[], int> SerializeDataAndGetSize(MessageData messageData)
+    private static (byte[], int) SerializeDataAndGetSize(MessageData messageData)
     {
         var size = 0;
         var serializedData = Serialize(messageData);
 
         size += Encoding.UTF8.GetByteCount(LibIdentifier);
-
         size += serializedData.Length;
 
-        return new Tuple<byte[], int>(serializedData, size);
+        return (serializedData, size);
     }
 
     #endregion
