@@ -72,11 +72,18 @@ internal class RpcPatcher
         UnnamedMessageHandler.Instance!.SendMessageToServer(messageData);
     }
 
-    private static void SendClientRpc(MethodBase __originalMethod, object[] __args)
+    private static void SendClientRpc(MethodBase __originalMethod, object[]? __args)
     {
         if (!IsListening(out _)) return;
 
         var messageData = new MessageData(MessageType.ClientRpc, new RpcIdentifier(__originalMethod), __args);
+
+        if (__args is not { Length: not 0 } || !__args.Any(arg => arg is ClientRpcParams))
+        {
+            UnnamedMessageHandler.Instance!.SendMessageToClient(messageData);
+            return;
+        }
+
         var clientRpcParams = (ClientRpcParams)__args.FirstOrDefault(arg => arg is ClientRpcParams);
 
         UnnamedMessageHandler.Instance!.SendMessageToClient(messageData, clientRpcParams);
