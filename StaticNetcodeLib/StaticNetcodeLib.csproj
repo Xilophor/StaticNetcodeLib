@@ -93,22 +93,12 @@
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all"/>
     </ItemGroup>
 
-    <ItemGroup Condition="$(CI) != 'true'">
-        <Reference Include="Assembly-CSharp" Publicize="true" PrivateAssets="all">
-            <HintPath>$(DependenciesDirectory)\Assembly-CSharp.dll</HintPath>
-        </Reference>
-        <Reference Include="Unity.Netcode.Runtime" Publicize="true" PrivateAssets="all">
-            <HintPath>$(DependenciesDirectory)\Unity.Netcode.Runtime.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-
-    <ItemGroup Condition="$(CI) == 'true'">
-        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" Publicize="true" PrivateAssets="all"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-        <Reference Include="OdinSerializer" PrivateAssets="all">
+    <ItemGroup>
+        <Reference Include="OdinSerializer">
             <HintPath>$(ProjectDir)../libs/odin-serializer/OdinSerializer.dll</HintPath>
+        </Reference>
+        <Reference Include="Unity.Netcode.Runtime" Publicize="true" Private="false">
+            <HintPath>$(ProjectDir)../libs/netcode-for-game-objects/Unity.Netcode.Runtime.dll</HintPath>
         </Reference>
     </ItemGroup>
 
