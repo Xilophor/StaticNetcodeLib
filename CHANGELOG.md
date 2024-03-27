@@ -7,3 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.1]
+
+### Changed
+- Internal Refactoring
+- Updated README
+
+## [v1.0.0]
+
+### Added
+- Added static RPC patching
