@@ -27,8 +27,7 @@ public class StaticNetcodeLib : BaseUnityPlugin
 
         Patch();
 
-        GameObject patcherObject = new("StaticNetcodePatcherObject", typeof(MethodRegistration));
-        DontDestroyOnLoad(patcherObject);
+        this.gameObject.hideFlags |= HideFlags.HideAndDontSave;
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
     }
@@ -42,5 +41,71 @@ public class StaticNetcodeLib : BaseUnityPlugin
         Harmony.PatchAll();
 
         Logger.LogDebug("Finished patching!");
+    }
+
+    private static readonly HarmonyMethod ServerRpcPatch = new(typeof(RpcPatcher), nameof(RpcPatcher.PatchServerRpc));
+    private static readonly HarmonyMethod ClientRpcPatch = new(typeof(RpcPatcher), nameof(RpcPatcher.PatchClientRpc));
+
+    private void Start()
+    {
+#if DEBUG
+        Logger.LogDebug("Attempting Rpc Patching...");
+#endif
+
+        var pluginsToPatch = Chainloader.PluginInfos.Values
+            .Where(info => !ReferenceEquals(info.Instance, null))
+            .Select(info => info.Instance.GetType())
+            .Where(type => type.GetCustomAttributes<BepInDependency>()
+                .Any(attr => attr.DependencyGUID == MyPluginInfo.PLUGIN_GUID));
+
+        var classesToPatch = pluginsToPatch.SelectMany(plugin =>
+            plugin.Assembly.GetTypes().Where(type => type.GetCustomAttributes<StaticNetcodeAttribute>().Any())).ToArray();
+
+        var methodsInClasses = classesToPatch.SelectMany(type =>
+            type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)).ToArray();
+
+        var serverRpcsToPatch = methodsInClasses.Where(method => method.GetCustomAttributes<ServerRpcAttribute>().Any() && method.IsStatic);
+        var clientRpcsToPatch = methodsInClasses.Where(method => method.GetCustomAttributes<ClientRpcAttribute>().Any() && method.IsStatic);
+
+        serverRpcsToPatch.Do(method =>
+        {
+            if (!method.Name.EndsWith("ServerRpc"))
+            {
+                Logger.LogError($"Method {method.FullDescription()} must end with ServerRpc.");
+                return;
+            }
+            try
+            {
+                Harmony?.Patch(method, prefix: ServerRpcPatch);
+                RpcPatcher.RpcExecStageLookup[method] = RpcExecStage.None;
+#if DEBUG
+                Logger.LogDebug($"Patched {method.Name}!");
+#endif
+            }
+            catch
+            {
+                Logger.LogError($"Unable to patch the method {method.FullDescription()}!");
+            }
+        });
+        clientRpcsToPatch.Do(method =>
+        {
+            if (!method.Name.EndsWith("ClientRpc"))
+            {
+                Logger.LogError($"Method {method.FullDescription()} must end with ClientRpc.");
+                return;
+            }
+            try
+            {
+                Harmony?.Patch(method, prefix: ClientRpcPatch);
+                RpcPatcher.RpcExecStageLookup[method] = RpcExecStage.None;
+#if DEBUG
+                Logger.LogDebug($"Patched {method.Name}!");
+#endif
+            }
+            catch
+            {
+                Logger.LogError($"Unable to patch the method {method.FullDescription()}!");
+            }
+        });
     }
 }

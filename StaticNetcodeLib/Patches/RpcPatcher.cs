@@ -17,6 +17,10 @@ internal class RpcPatcher
 
         var execStage = RpcExecStageLookup[__originalMethod];
 
+#if DEBUG
+        StaticNetcodeLib.Logger.LogDebug("Running ServerRpc with exec stage: "+execStage);
+#endif
+
         // If the execStage is server, return true, else if the "client" is a server, return false
         if (execStage == RpcExecStage.Server)
             return true;
@@ -32,6 +36,10 @@ internal class RpcPatcher
         if (!IsListening(out var networkManager)) return false;
 
         var execStage = RpcExecStageLookup[__originalMethod];
+
+#if DEBUG
+        StaticNetcodeLib.Logger.LogDebug("Running ClientRpc with exec stage: "+execStage);
+#endif
 
         // If the execStage is client, return true, else if the calling type is a client, return false
         if (execStage == RpcExecStage.Client)
