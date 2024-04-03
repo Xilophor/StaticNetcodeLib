@@ -17,7 +17,9 @@ internal class MethodRegistration : MonoBehaviour
 
     private void Start()
     {
-        var pluginsToPatch = Chainloader.PluginInfos.Select(pair => pair.Value.Instance.GetType())
+        var pluginsToPatch = Chainloader.PluginInfos.Values
+            .Where(info => !ReferenceEquals(info.Instance, null))
+            .Select(info => info.Instance.GetType())
             .Where(type => type.GetCustomAttributes<BepInDependency>()
                 .Any(attr => attr.DependencyGUID == MyPluginInfo.PLUGIN_GUID));
 
