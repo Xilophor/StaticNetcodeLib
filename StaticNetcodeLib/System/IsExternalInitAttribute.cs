@@ -5,6 +5,4 @@ namespace System.Runtime.CompilerServices;
 /// <summary>
 ///     Required to use Net 5.0 record features.
 /// </summary>
-internal static class IsExternalInit
-{
-}
+internal static class IsExternalInitAttribute;

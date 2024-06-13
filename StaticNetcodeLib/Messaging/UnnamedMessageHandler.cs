@@ -117,10 +117,27 @@ internal class UnnamedMessageHandler : IDisposable
 
     #region Helper Methods
 
-    private static byte[] Serialize(object? data) => SerializationUtility.SerializeValue(data, DataFormat.Binary);
+    private static readonly SerializationContext DefaultSerializationContext = new()
+    {
+        Config = new SerializationConfig()
+        {
+            SerializationPolicy = SerializationPolicies.Everything
+        }
+    };
+
+    private static readonly DeserializationContext DefaultDeserializationContext = new()
+    {
+        Config = new SerializationConfig()
+        {
+            SerializationPolicy = SerializationPolicies.Everything
+        }
+    };
+
+    private static byte[] Serialize(object? data) =>
+        SerializationUtility.SerializeValue(data, DataFormat.Binary, DefaultSerializationContext);
 
     private static T Deserialize<T>(byte[] serializedData) =>
-        SerializationUtility.DeserializeValue<T>(serializedData, DataFormat.Binary);
+        SerializationUtility.DeserializeValue<T>(serializedData, DataFormat.Binary, DefaultDeserializationContext);
 
     private static void WriteMessageData(out FastBufferWriter writer, MessageData messageData)
     {

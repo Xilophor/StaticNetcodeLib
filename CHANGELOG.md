@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.1.0]
+
+### Changed
+- The static RPCs should now serialize anything you throw at it.
+
 ## [v1.0.3]
 
 ### Changed
