@@ -83,7 +83,7 @@ internal class UnnamedMessageHandler : IDisposable
 
         message.ReadValueSafe(out byte[] serializedMessageData);
 
-        var messageData = Deserialize<MessageData>(serializedMessageData);
+        var messageData = DeserializeMessageData(serializedMessageData);
 
         switch (messageData.MessageType)
         {
@@ -99,9 +99,9 @@ internal class UnnamedMessageHandler : IDisposable
 
     private void ReceiveRpc(MessageData messageData)
     {
-        var (_, identifier, parameters) = messageData.AsValueTuple();
+        var (_, methodBase, parameters) = messageData.AsValueTuple();
 
-        var methodBase = (identifier as RpcIdentifier? ?? throw new NullReferenceException()).RpcMethod;
+        methodBase = methodBase ?? throw new NullReferenceException("MethodBase is null.");
         var objectArray = (object[]?)parameters is { Length: 0 } ? null : (object[]?)parameters;
 
         var execStage = messageData.MessageType == MessageType.ServerRpc ? RpcExecStage.Server : RpcExecStage.Client;
@@ -136,8 +136,17 @@ internal class UnnamedMessageHandler : IDisposable
     private static byte[] Serialize(object? data) =>
         SerializationUtility.SerializeValue(data, DataFormat.Binary, DefaultSerializationContext);
 
+    private static byte[] SerializeMessageData(MessageData messageData) =>
+        SerializationUtility.SerializeValue(messageData with { Data = Serialize(messageData.Data) }, DataFormat.Binary);
+
     private static T Deserialize<T>(byte[] serializedData) =>
         SerializationUtility.DeserializeValue<T>(serializedData, DataFormat.Binary, DefaultDeserializationContext);
+
+    private static MessageData DeserializeMessageData(byte[] serializedData)
+    {
+        var messageData = SerializationUtility.DeserializeValue<MessageData>(serializedData, DataFormat.Binary);
+        return messageData with { Data = Deserialize<object[]?>((byte[])messageData.Data!) };
+    }
 
     private static void WriteMessageData(out FastBufferWriter writer, MessageData messageData)
     {
@@ -152,7 +161,7 @@ internal class UnnamedMessageHandler : IDisposable
     private static (byte[], int) SerializeDataAndGetSize(MessageData messageData)
     {
         var size = 0;
-        var serializedData = Serialize(messageData);
+        var serializedData = SerializeMessageData(messageData);
 
         size += Encoding.UTF8.GetByteCount(LibIdentifier);
         size += serializedData.Length;

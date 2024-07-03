@@ -63,7 +63,7 @@ internal class RpcPatcher
     {
         if (!IsListening(out var networkManager)) return;
 
-        var messageData = new MessageData(MessageType.ServerRpc, new RpcIdentifier(__originalMethod), __args);
+        var messageData = new MessageData(MessageType.ServerRpc, __originalMethod, __args);
 
         // Reverse as ServerRpcParams is typically the last param, slight performance edge
         for (var i = __args.Length - 1; i >= 0; i--)
@@ -83,7 +83,7 @@ internal class RpcPatcher
     {
         if (!IsListening(out _)) return;
 
-        var messageData = new MessageData(MessageType.ClientRpc, new RpcIdentifier(__originalMethod), __args);
+        var messageData = new MessageData(MessageType.ClientRpc, __originalMethod, __args);
 
         if (__args is not { Length: not 0 } || !__args.Any(arg => arg is ClientRpcParams))
         {
