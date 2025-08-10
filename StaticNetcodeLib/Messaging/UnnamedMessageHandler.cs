@@ -3,10 +3,11 @@ namespace StaticNetcodeLib.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Enums;
-using OdinSerializer;
 using Patches;
+using Serialization;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -81,11 +82,23 @@ internal class UnnamedMessageHandler : IDisposable
 
         if (identifier != LibIdentifier) return;
 
-        message.ReadValueSafe(out byte[] serializedMessageData);
+        message.ReadValueSafe(out MessageType messageType);
+        message.ReadValueSafe(out byte[] serializedMethodBase);
+        message.ReadValueSafe(out int paramCount);
 
-        var messageData = DeserializeMessageData(serializedMessageData);
+        var methodBase = StaticNetcodeSerializer.Deserialize<MethodBase>(serializedMethodBase);
+        var paramTypes = methodBase.GetParameters().Select(p => p.ParameterType).ToArray();
 
-        switch (messageData.MessageType)
+        var paramArray = new List<object>();
+        for (var i = 0; i < paramCount; i++)
+        {
+            message.ReadValueSafe(out byte[] serializedParam);
+            paramArray.Add(StaticNetcodeSerializer.DeserializeObjectWithType(serializedParam, paramTypes[i]));
+        }
+
+        MessageData messageData = new(messageType, methodBase, paramArray.ToArray());
+
+        switch (messageType)
         {
             case MessageType.ServerRpc or MessageType.ClientRpc:
                 this.ReceiveRpc(messageData);
@@ -102,8 +115,7 @@ internal class UnnamedMessageHandler : IDisposable
         var (_, methodBase, parameters) = messageData.AsValueTuple();
 
         methodBase = methodBase ?? throw new NullReferenceException("MethodBase is null.");
-        var objectArray = (object[]?)parameters is { Length: 0 } ? null : (object[]?)parameters;
-
+        var objectArray = parameters is { Length: 0 } or null ? [] : parameters;
         var execStage = messageData.MessageType == MessageType.ServerRpc ? RpcExecStage.Server : RpcExecStage.Client;
 
         RpcPatcher.RpcExecStageLookup[methodBase] = execStage;
@@ -117,57 +129,33 @@ internal class UnnamedMessageHandler : IDisposable
 
     #region Helper Methods
 
-    private static readonly SerializationContext DefaultSerializationContext = new()
-    {
-        Config = new SerializationConfig()
-        {
-            SerializationPolicy = SerializationPolicies.Everything
-        }
-    };
-
-    private static readonly DeserializationContext DefaultDeserializationContext = new()
-    {
-        Config = new SerializationConfig()
-        {
-            SerializationPolicy = SerializationPolicies.Everything
-        }
-    };
-
-    private static byte[] Serialize(object? data) =>
-        SerializationUtility.SerializeValue(data, DataFormat.Binary, DefaultSerializationContext);
-
-    private static byte[] SerializeMessageData(MessageData messageData) =>
-        SerializationUtility.SerializeValue(messageData with { Data = Serialize(messageData.Data) }, DataFormat.Binary);
-
-    private static T Deserialize<T>(byte[] serializedData) =>
-        SerializationUtility.DeserializeValue<T>(serializedData, DataFormat.Binary, DefaultDeserializationContext);
-
-    private static MessageData DeserializeMessageData(byte[] serializedData)
-    {
-        var messageData = SerializationUtility.DeserializeValue<MessageData>(serializedData, DataFormat.Binary);
-        return messageData with { Data = Deserialize<object[]?>((byte[])messageData.Data!) };
-    }
-
     private static void WriteMessageData(out FastBufferWriter writer, MessageData messageData)
     {
-        var (serializedMessage, size) = SerializeDataAndGetSize(messageData);
+        var (serializedMessageBase, serializedMessage, size) = SerializeDataAndGetSize(messageData);
 
         writer = new FastBufferWriter(size, Allocator.Temp);
 
         writer.WriteValueSafe(LibIdentifier);
-        writer.WriteValueSafe(serializedMessage);
+        writer.WriteValueSafe(messageData.MessageType);
+        writer.WriteValueSafe(serializedMessageBase);
+        writer.WriteValueSafe(messageData.Data?.Length ?? 0);
+        foreach (var param in serializedMessage)
+            writer.WriteValueSafe(param);
     }
 
-    private static (byte[], int) SerializeDataAndGetSize(MessageData messageData)
+    private static (byte[], byte[][], int) SerializeDataAndGetSize(MessageData messageData)
     {
         var size = 0;
-        var serializedData = SerializeMessageData(messageData);
+        var serializedData = messageData.Data?.Select(StaticNetcodeSerializer.SerializeObject).ToArray() ?? [];
+        var serializedMessageBase = StaticNetcodeSerializer.Serialize(messageData.MethodBase);
 
         size += Encoding.UTF8.GetByteCount(LibIdentifier);
-        size += serializedData.Length;
+        size += sizeof(MessageType);
+        size += serializedMessageBase.Length;
+        size += serializedData.Sum(byteArray => byteArray.Length);
         size += 100;
 
-        return (serializedData, size);
+        return (serializedMessageBase, serializedData, size);
     }
 
     #endregion
