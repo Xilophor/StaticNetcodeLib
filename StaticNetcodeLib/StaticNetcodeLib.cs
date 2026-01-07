@@ -7,7 +7,9 @@ using BepInEx.Bootstrap;
 using BepInEx.Logging;
 using Enums;
 using HarmonyLib;
+using Messaging;
 using Patches;
+using Serialization;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -78,9 +80,8 @@ public class StaticNetcodeLib : BaseUnityPlugin
             {
                 Harmony?.Patch(method, prefix: ServerRpcPatch);
                 RpcPatcher.RpcExecStageLookup[method] = RpcExecStage.None;
-#if DEBUG
+                StaticNetcodeSerializer.Deserialize<MethodBase>(StaticNetcodeSerializer.Serialize(method));
                 Logger.LogDebug($"Patched {method.Name}!");
-#endif
             }
             catch
             {
@@ -98,9 +99,8 @@ public class StaticNetcodeLib : BaseUnityPlugin
             {
                 Harmony?.Patch(method, prefix: ClientRpcPatch);
                 RpcPatcher.RpcExecStageLookup[method] = RpcExecStage.None;
-#if DEBUG
+                StaticNetcodeSerializer.Deserialize<MethodBase>(StaticNetcodeSerializer.Serialize(method));
                 Logger.LogDebug($"Patched {method.Name}!");
-#endif
             }
             catch
             {
