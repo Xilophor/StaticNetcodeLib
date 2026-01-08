@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.2.0]
+
+### Changed
+- Updated OdinSerializer dependency to the latest version.
+
+### Fixed
+- Fixed serialization error by reworking serialization to include type-specific deserialization.
+
+## [v1.1.1]
+
+### Fixed
+- Resolved Null Reference Error related to MethodBases
+- Resolved Lag Spikes occurring when transmitting packets.
+
 ## [v1.1.0]
 
 ### Changed
